@@ -1,15 +1,9 @@
 package com.example.openTracing;
 
-import java.util.Arrays;
-
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Bean;
 
 import io.jaegertracing.Configuration;
-import io.jaegertracing.internal.JaegerTracer;
 import io.opentracing.Tracer;
 import io.opentracing.util.GlobalTracer;
 
@@ -17,18 +11,10 @@ import io.opentracing.util.GlobalTracer;
 public class Application {
 
 	public static void main(String[] args) throws Exception {
-		
-		if (GlobalTracer.isRegistered()) {
-			System.out.println("already up");
-		} else {
-			System.out.println("nvm");
-		}
-
 		if (!configureGlobalTracer("demo_tracer"))
 			throw new Exception("Could not configure the global tracer");
 
 		SpringApplication.run(Application.class, args);
-
 	}
 
 	static boolean configureGlobalTracer(String s) {

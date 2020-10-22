@@ -8,7 +8,7 @@ public class HelloController {
 
 	@RequestMapping("/")
 	public String index() {
-		return "<a href=\"http://localhost:8080/swagger-ui.html#/tracing-resource\">API test page</a>";
+		return "<a href=\"http://localhost:8081/swagger-ui.html#/tracing-resource\">API test page</a>";
 	}
 
 }

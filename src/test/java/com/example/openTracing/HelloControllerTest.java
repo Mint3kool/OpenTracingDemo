@@ -24,6 +24,6 @@ public class HelloControllerTest {
 	public void getHello() throws Exception {
 		mvc.perform(MockMvcRequestBuilders.get("/").accept(MediaType.APPLICATION_JSON))
 				.andExpect(status().isOk())
-				.andExpect(content().string(equalTo("<a href=\"http://localhost:8080/swagger-ui.html#/tracing-resource\">API test page</a>")));
+				.andExpect(content().string(equalTo("<a href=\"http://localhost:8081/swagger-ui.html#/tracing-resource\">API test page</a>")));
 	}
 }

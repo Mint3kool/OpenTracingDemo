@@ -3,37 +3,31 @@ package com.example.openTracing.rest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
-import lombok.Data;
-import okhttp3.Call;
 import okhttp3.HttpUrl;
-import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
-import okhttp3.Request.Builder;
 import okhttp3.Response;
 
 import com.example.openTracing.Consumer;
 import com.example.openTracing.Producer;
 
-import io.opentracing.Scope;
-import io.opentracing.ScopeManager;
 import io.opentracing.Span;
 import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
-import io.opentracing.contrib.okhttp3.TagWrapper;
 import io.opentracing.propagation.Format;
 import io.opentracing.propagation.Format.Builtin;
 import io.opentracing.tag.Tags;
 import io.opentracing.util.GlobalTracer;
 
 import java.io.IOException;
+
+import java.util.Map;
 
 import javax.jms.Message;
 
@@ -47,108 +41,41 @@ import javax.jms.Message;
 public class TracingResource {
 
 	@Autowired
-	private Consumer consumer;
-
-	@Autowired
-	private Producer producer;
-
-	@Autowired
 	private ApplicationContext ctx;
 
 	OkHttpClient client;
 
-//	@Autowired
-//	private Tracer tracer;
-
 	private static final Logger logger = LoggerFactory.getLogger(TracingResource.class);
 
-	@RequestMapping(value = "/request/{queue}", method = RequestMethod.GET)
-	public String getRequest(@PathVariable("queue") String queue) {
+	@RequestMapping(value = "/trace", method = RequestMethod.GET)
+	public void getTrace(@RequestParam("queue") String queue) {
 		JmsTemplate jms = ctx.getBean(JmsTemplate.class);
-		Object o = jms.receiveAndConvert(queue);
-		return o.toString();
+		Tracer t = (Tracer) jms.receiveAndConvert(queue);
+
+		Span s = t.buildSpan("jms_recieve").start();
+
+		s.setTag("second", "2");
+		s.finish();
 	}
 
-	@RequestMapping(value = "/batch/{queue}", method = RequestMethod.GET)
-	public void getBatch(@PathVariable("queue") String queue, @RequestParam("quantity") int quantity) {
-		JmsTemplate jms = ctx.getBean(JmsTemplate.class);
-		for (int i = 0; i < quantity; i++) {
-			jms.receiveAndConvert(queue);
-		}
-	}
+	@RequestMapping(value = "/apiTrace", method = RequestMethod.POST, consumes = "application/json")
+	public void getApiTrace(@RequestHeader Map<String, String> request, @RequestBody Object body) {
 
-	@RequestMapping(value = "/request/{queue}", method = RequestMethod.POST)
-	public void sendRequest(@PathVariable("queue") String queue, @RequestParam("message") String message) {
-		sendCustomMessage(queue, message);
-	}
+		Tracer t = GlobalTracer.get();
 
-	@RequestMapping(value = "/batch/{queue}", method = RequestMethod.POST)
-	public void sendBatch(@PathVariable("queue") String queue, @RequestParam("quantity") int quantity) {
-		for (int i = 0; i < quantity; i++) {
-			sendMessage(queue);
-		}
-	}
+		SpanContext parent = t.extract(Builtin.HTTP_HEADERS, new HttpHeadersExtract(request));
 
-	@RequestMapping(value = "/raw", method = RequestMethod.POST)
-	public void raw() {
-		if (GlobalTracer.isRegistered()) {
-			System.out.println("The global tracer is set");
-			System.out.println(GlobalTracer.get().toString());
+		Span newSpan = null;
+
+		if (parent == null) {
+			newSpan = t.buildSpan("new_span").start();
+		} else {
+			newSpan = t.buildSpan("extend_span").asChildOf(parent).start();
 		}
 
-		Span s = GlobalTracer.get().buildSpan("yeet").start();
+		newSpan.setTag("more_baggage", "super_bags");
 
-		try (Scope sc = GlobalTracer.get().scopeManager().activate(s)) {
-			s.setTag("tag", "please");
-		} catch (Exception e) {
-			e.printStackTrace();
-		} finally {
-			s.finish();
-		}
-	}
-
-	@RequestMapping(value = "/test", method = RequestMethod.POST)
-	public void startTest(@RequestParam("queue") String queue, @RequestParam("quantity") int quantity) {
-
-//		producer.setQueueName(queue);
-//		--------------------------------------
-
-//		Span span = tracer.buildSpan("testMessage").start();
-//
-//        HttpStatus status = HttpStatus.NO_CONTENT;
-//
-//        try {
-//            int id = Integer.parseInt(idString);
-//            log.info("Received Request to delete employee {}", id);
-//            span.log(ImmutableMap.of("event", "delete-request", "value", idString));
-//            if (employeeService.deleteEmployee(id, span)) {
-//                span.log(ImmutableMap.of("event", "delete-success", "value", idString));
-//                span.setTag("http.status_code", 200);
-//                status = HttpStatus.OK;
-//            } else {
-//                span.log(ImmutableMap.of("event", "delete-fail", "value", "does not exist"));
-//                span.setTag("http.status_code", 204);
-//            }
-//        } catch (NumberFormatException | NoSuchElementException nfe) {
-//            span.log(ImmutableMap.of("event", "delete-fail", "value", idString));
-//            span.setTag("http.status_code", 204);
-//        }
-//
-//        span.finish();
-
-//        -----------------------------
-
-		consumer.setQueueName(queue);
-
-		for (int i = 0; i < quantity; i++) {
-			sendMessage(queue);
-		}
-
-		Thread consumerThread = new Thread(consumer);
-		consumerThread.start();
-
-//        Thread producerThread = new Thread(producer);
-//        producerThread.start();
+		newSpan.finish();
 	}
 
 	public void sendMessage(String queue) {
@@ -191,5 +118,10 @@ public class TracingResource {
 		Tags.HTTP_STATUS.set(t.activeSpan(), response.code());
 
 		newSpan.finish();
+	}
+
+	public void sendCustomObjectMessage(String queue, Object o) {
+		JmsTemplate jms = ctx.getBean(JmsTemplate.class);
+		jms.convertAndSend(queue, o);
 	}
 }
