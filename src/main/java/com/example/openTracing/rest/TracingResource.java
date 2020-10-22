@@ -16,6 +16,8 @@ import okhttp3.Response;
 
 import com.example.openTracing.Consumer;
 import com.example.openTracing.Producer;
+import com.example.openTracing.util.HttpHeadersExtract;
+import com.example.openTracing.util.RequestBuilderCarrier;
 
 import io.opentracing.Span;
 import io.opentracing.SpanContext;
@@ -43,9 +45,13 @@ public class TracingResource {
 	@Autowired
 	private ApplicationContext ctx;
 
-	OkHttpClient client;
+	private OkHttpClient client;
 
 	private static final Logger logger = LoggerFactory.getLogger(TracingResource.class);
+	
+	public TracingResource() {
+		client = new OkHttpClient();
+	}
 
 	@RequestMapping(value = "/trace", method = RequestMethod.GET)
 	public void getTrace(@RequestParam("queue") String queue) {
@@ -56,26 +62,6 @@ public class TracingResource {
 
 		s.setTag("second", "2");
 		s.finish();
-	}
-
-	@RequestMapping(value = "/apiTrace", method = RequestMethod.POST, consumes = "application/json")
-	public void getApiTrace(@RequestHeader Map<String, String> request, @RequestBody Object body) {
-
-		Tracer t = GlobalTracer.get();
-
-		SpanContext parent = t.extract(Builtin.HTTP_HEADERS, new HttpHeadersExtract(request));
-
-		Span newSpan = null;
-
-		if (parent == null) {
-			newSpan = t.buildSpan("new_span").start();
-		} else {
-			newSpan = t.buildSpan("extend_span").asChildOf(parent).start();
-		}
-
-		newSpan.setTag("more_baggage", "super_bags");
-
-		newSpan.finish();
 	}
 
 	public void sendMessage(String queue) {
@@ -90,7 +76,6 @@ public class TracingResource {
 
 	@RequestMapping(value = "/externalRequest", method = RequestMethod.POST)
 	public void externalRequest() throws IOException {
-		client = new OkHttpClient();
 		Tracer t = GlobalTracer.get();
 
 //		http://localhost:8081/api/apiTrace

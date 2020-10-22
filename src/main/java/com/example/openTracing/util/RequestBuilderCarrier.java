@@ -1,4 +1,4 @@
-package com.example.openTracing.rest;
+package com.example.openTracing.util;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -9,7 +9,7 @@ import okhttp3.Request;
 public class RequestBuilderCarrier implements TextMap {
     private final Request.Builder builder;
 
-    RequestBuilderCarrier(Request.Builder builder) {
+    public RequestBuilderCarrier(Request.Builder builder) {
         this.builder = builder;
     }
 

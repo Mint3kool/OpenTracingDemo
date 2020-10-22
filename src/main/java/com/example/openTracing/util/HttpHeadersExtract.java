@@ -1,4 +1,4 @@
-package com.example.openTracing.rest;
+package com.example.openTracing.util;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -10,7 +10,7 @@ import io.opentracing.propagation.TextMap;
 public class HttpHeadersExtract implements TextMap {
 	private final Map<String, String> map = new HashMap<>();
 
-	HttpHeadersExtract(final Map<String, String> headers) {
+	public HttpHeadersExtract(final Map<String, String> headers) {
 		for (Map.Entry<String, String> entry : headers.entrySet())
 			map.put(entry.getKey(), entry.getValue());
 	}
