@@ -24,7 +24,7 @@ public class Application {
 			System.out.println("nvm");
 		}
 
-		if (!configureGlobalTracer("stupid"))
+		if (!configureGlobalTracer("demo_tracer"))
 			throw new Exception("Could not configure the global tracer");
 
 		SpringApplication.run(Application.class, args);

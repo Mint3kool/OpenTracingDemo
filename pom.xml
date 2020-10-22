@@ -70,6 +70,17 @@
 			<artifactId>jaeger-thrift</artifactId>
 			<version>1.4.0</version>
 		</dependency>
+
+		<dependency>
+			<groupId>io.opentracing.contrib</groupId>
+			<artifactId>opentracing-okhttp3</artifactId>
+			<version>0.1.0</version>
+		</dependency>
+		<dependency>
+			<groupId>io.opentracing.contrib</groupId>
+			<artifactId>opentracing-web-servlet-filter</artifactId>
+			<version>0.1.1</version>
+		</dependency>
 	</dependencies>
 
 	<build>
