@@ -165,41 +165,31 @@ public class TracingResource {
 	public void externalRequest() throws IOException {
 		client = new OkHttpClient();
 		Tracer t = GlobalTracer.get();
-		
-		HttpUrl url = new HttpUrl.Builder().scheme("http").host("localhost").port(8081).addPathSegment("api/apiTrace")
-                .addQueryParameter("param", "value").build();
+
+//		http://localhost:8081/api/apiTrace
+
+		HttpUrl url = new HttpUrl.Builder().scheme("http").host("localhost").port(8081).addPathSegment("api")
+				.addPathSegment("apiTrace").addQueryParameter("param", "value").build();
 
 		Span newSpan = t.buildSpan("external_span").start();
-		
+
 		t.scopeManager().activate(newSpan);
 
 		newSpan.setTag("more_baggage", "super_bags");
-		
+
 		Request.Builder requestBuilder = new Request.Builder().url(url);
 
 		Tags.SPAN_KIND.set(t.activeSpan(), Tags.SPAN_KIND_CLIENT);
-		Tags.HTTP_METHOD.set(t.activeSpan(), "POST");
-		Tags.HTTP_URL.set(t.activeSpan(), url.toString());		
+		Tags.HTTP_METHOD.set(t.activeSpan(), "GET");
+		Tags.HTTP_URL.set(t.activeSpan(), url.toString());
 		t.inject(t.activeSpan().context(), Format.Builtin.HTTP_HEADERS, new RequestBuilderCarrier(requestBuilder));
 
 		Request r1 = requestBuilder.build();
-		
+
 		Response response = client.newCall(r1).execute();
-		
+
+		Tags.HTTP_STATUS.set(t.activeSpan(), response.code());
+
 		newSpan.finish();
-
-		String json = "{\"id\":1,\"name\":\"John\"}";
-
-		okhttp3.RequestBody body = okhttp3.RequestBody.create(MediaType.parse("application/json"), json);
-
-		// "http://localhost:8081/api/apiTrace" -H "accept: */*" -H
-		// "request: Content-Type: application/json" -H
-		// "Content-Type: application/json" -d "{\"yes\" : \"no\"}"
-
-		Request request = new Request.Builder().url("http://localhost:8081/api/apiTrace")
-				.tag(new TagWrapper(newSpan.context())).post(body).build();
-
-		Call call = client.newCall(request);
-		call.execute();
 	}
 }
