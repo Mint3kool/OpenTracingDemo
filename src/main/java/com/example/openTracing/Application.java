@@ -11,13 +11,13 @@ import io.opentracing.util.GlobalTracer;
 public class Application {
 
 	public static void main(String[] args) throws Exception {
-		if (!configureGlobalTracer("demo_tracer"))
+		if (!configureGlobalTracer())
 			throw new Exception("Could not configure the global tracer");
 
 		SpringApplication.run(Application.class, args);
 	}
 
-	static boolean configureGlobalTracer(String s) {
+	static boolean configureGlobalTracer() {
 		Tracer t = null;
 		Configuration.SamplerConfiguration samplerConfig = Configuration.SamplerConfiguration.fromEnv()
 				.withType("const").withParam(1);
@@ -25,7 +25,7 @@ public class Application {
 				.withAgentHost("localhost").withAgentPort(5775);
 		Configuration.ReporterConfiguration reporterConfig = Configuration.ReporterConfiguration.fromEnv()
 				.withLogSpans(true).withSender(senderConfig);
-		t = new Configuration(s).withSampler(samplerConfig).withReporter(reporterConfig).getTracer();
+		t = new Configuration("global_tracer_sender").withSampler(samplerConfig).withReporter(reporterConfig).getTracer();
 		GlobalTracer.registerIfAbsent(t);
 		return true;
 	}

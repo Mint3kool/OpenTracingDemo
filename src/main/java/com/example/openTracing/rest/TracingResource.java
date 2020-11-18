@@ -1,10 +1,7 @@
 package com.example.openTracing.rest;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
-import org.springframework.jms.core.JmsTemplate;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
@@ -14,33 +11,27 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
-import com.example.openTracing.Consumer;
-import com.example.openTracing.Producer;
-import com.example.openTracing.util.HttpHeadersExtract;
 import com.example.openTracing.util.RequestBuilderCarrier;
 
 import io.opentracing.Scope;
 import io.opentracing.Span;
-import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
 import io.opentracing.propagation.Format;
-import io.opentracing.propagation.Format.Builtin;
 import io.opentracing.tag.Tags;
 import io.opentracing.util.GlobalTracer;
 
 import java.io.IOException;
 
-import java.util.Map;
-
-import javax.jms.Message;
-
 /**
- * Notes: 
  * 
+ * This class sends api calls with OpenTracing tags to the receiver on the same system
+ * 
+ * Notes: 
  * JmsTemplate is used for completely synchronous jms client calls
  * 
- * I've also intentionally grouped all the tracer logic as much as possible here to clearly show
- * the necessary steps when initializing and sending traces
+ * Tracer logic is intentionally grouped as much as possible here to clearly show
+ * the necessary steps when initializing and sending traces. In a more mature codebase
+ * it would make more sense to split out certain steps.
  */
 @Service
 @Component
@@ -52,33 +43,9 @@ public class TracingResource {
 	private ApplicationContext ctx;
 
 	private OkHttpClient client;
-
-	private static final Logger logger = LoggerFactory.getLogger(TracingResource.class);
 	
 	public TracingResource() {
 		client = new OkHttpClient();
-	}
-
-	@RequestMapping(value = "/trace", method = RequestMethod.GET)
-	public void getTrace(@RequestParam("queue") String queue) {
-		JmsTemplate jms = ctx.getBean(JmsTemplate.class);
-		Tracer t = (Tracer) jms.receiveAndConvert(queue);
-
-		Span s = t.buildSpan("jms_recieve").start();
-
-		s.setTag("second", "2");
-		s.finish();
-	}
-
-	public void sendMessage(String queue) {
-		sendCustomMessage(queue, java.util.UUID.randomUUID().toString());
-	}
-
-	public void sendCustomMessage(String queue, String message) {
-
-//		AmqpTemplate amqp = ctx.getBean(AmqpTemplate.class);
-		JmsTemplate jms = ctx.getBean(JmsTemplate.class);
-		jms.convertAndSend(queue, message);
 	}
 
 	@RequestMapping(value = "/nestedExternalRequest", method = RequestMethod.POST)
@@ -119,7 +86,7 @@ public class TracingResource {
 
 		Span newSpan = t.buildSpan("finished_external_span").start();
 
-		Scope s = t.scopeManager().activate(newSpan);//, true);
+		t.scopeManager().activate(newSpan);
 
 		newSpan.setTag("more_baggage", "super_bags");
 		
@@ -137,11 +104,5 @@ public class TracingResource {
 		Response response = client.newCall(r1).execute();
 
 		Tags.HTTP_STATUS.set(t.activeSpan(), response.code());
-	}
-	
-
-	public void sendCustomObjectMessage(String queue, Object o) {
-		JmsTemplate jms = ctx.getBean(JmsTemplate.class);
-		jms.convertAndSend(queue, o);
 	}
 }
