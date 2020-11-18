@@ -31,6 +31,6 @@ These instructions are for running the projects on localhost
 9. Navigate to the Jaeger UI, and refresh the page. The traces should appear.
 
 ## Additional Resources
-OpenTracing API specs repo: https://github.com/opentracing/specification
-Tutorials for Multiple languages: https://github.com/yurishkuro/opentracing-tutorial
-A more in depth Java/Javascript OpenTracing walkthrough: https://github.com/opentracing-contrib/java-opentracing-walkthrough
+OpenTracing API specs repo: https://github.com/opentracing/specification  
+Tutorials for Multiple languages: https://github.com/yurishkuro/opentracing-tutorial  
+A more in depth Java/Javascript OpenTracing walkthrough: https://github.com/opentracing-contrib/java-opentracing-walkthrough  
